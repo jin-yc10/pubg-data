@@ -2,8 +2,8 @@
 import scrapy
 from scrapy.selector import Selector
 import wget
-# http://dlsys.cs.washington.edu/schedule
-import re
+import re, json
+
 class EUSpider(scrapy.Spider):
     name = "eu"
     # allowed_domains = ["stanford.edu"]
@@ -32,6 +32,8 @@ class EUSpider(scrapy.Spider):
             rating = tds[2].xpath("div[@class='pull-right']/text()").extract()[0].strip()
             n_game = tds[3].xpath('text()').extract()[0].strip()
             print(rank, id, href, rating, n_game)
+            return scrapy.Request(url = 'https://pubgtracker.com/profile/pc/%s/squad?region=as'%(id),
+                                  callback=self.parse_user)
         next_page = Selector(text=body).xpath("//a[@class='next next-page']")
         print(next_page.extract())
         if len(next_page.xpath('@disabled')) == 0:
@@ -39,7 +41,18 @@ class EUSpider(scrapy.Spider):
             url_patern = 'https://pubgtracker.com/leaderboards/pc/Rating?page=%d&mode=3&region=3'
             next_url = url_patern % (current_page + 1)
             print('next_page =', next_url )
-            if( current_page < 5 ):
+            if current_page < 30 :
                 return scrapy.Request(url=next_url, callback=self.parse )
             else:
                 return
+
+    def parse_user(self, response):
+        # https://pubgtracker.com/profile/pc/Maesaengi/squad?region=as
+        body = response.body
+        els = Selector(text=body).xpath("//script[@type='text/javascript']")
+        for e in els:
+            content = e.xpath('text()').extract_first()
+            if content.find('playerData') > -1:
+                f = open('user.json','w')
+                # now info is in this dict
+                player_info = json.loads(content[17:-1])
