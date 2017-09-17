@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 import scrapy
+import argparse
 from scrapy.selector import Selector
-import wget
 import re, json
+import leveldb
+
+parser = argparse.ArgumentParser(description='EUSpider')
+parser.add_argument('N',type=int,nargs='?',help='number of pages',default=30)
+args = parser.parse_args()
 
 class EUSpider(scrapy.Spider):
     name = "eu"
-    # allowed_domains = ["stanford.edu"]
     allowed_domains = ["pubgtracker.com"]
 
     start_urls = (
@@ -14,6 +18,7 @@ class EUSpider(scrapy.Spider):
     )
     base = 'https://pubgtracker.com/leaderboards/pc/Rating?'
     p = re.compile(r'.*page=([0-9]+)&.*')
+    user_db = leveldb.LevelDB('./user_db')
 
     def parse(self, response):
         match = self.p.match(response.url)
@@ -32,7 +37,7 @@ class EUSpider(scrapy.Spider):
             rating = tds[2].xpath("div[@class='pull-right']/text()").extract()[0].strip()
             n_game = tds[3].xpath('text()').extract()[0].strip()
             print(rank, id, href, rating, n_game)
-            return scrapy.Request(url = 'https://pubgtracker.com/profile/pc/%s/squad?region=as'%(id),
+            yield scrapy.Request(url = 'https://pubgtracker.com/profile/pc/%s/squad?region=as'%(id),
                                   callback=self.parse_user)
         next_page = Selector(text=body).xpath("//a[@class='next next-page']")
         print(next_page.extract())
@@ -41,10 +46,9 @@ class EUSpider(scrapy.Spider):
             url_patern = 'https://pubgtracker.com/leaderboards/pc/Rating?page=%d&mode=3&region=3'
             next_url = url_patern % (current_page + 1)
             print('next_page =', next_url )
-            if current_page < 30 :
-                return scrapy.Request(url=next_url, callback=self.parse )
-            else:
-                return
+            if current_page < args.N :
+                yield scrapy.Request(url=next_url, callback=self.parse )
+        return
 
     def parse_user(self, response):
         # https://pubgtracker.com/profile/pc/Maesaengi/squad?region=as
@@ -53,6 +57,10 @@ class EUSpider(scrapy.Spider):
         for e in els:
             content = e.xpath('text()').extract_first()
             if content.find('playerData') > -1:
-                f = open('user.json','w')
                 # now info is in this dict
                 player_info = json.loads(content[17:-1])
+                try:
+                    user = self.user_db.Get(player_info['AccountId'])
+                    print(player_info['AccountId'], 'existed!')
+                except KeyError:
+                    self.user_db.Put(player_info['AccountId'], bytearray(content[17:-1], 'utf8'))
