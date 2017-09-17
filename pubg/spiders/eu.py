@@ -7,6 +7,7 @@ import leveldb
 
 parser = argparse.ArgumentParser(description='EUSpider')
 parser.add_argument('N',type=int,nargs='?',help='number of pages',default=30)
+parser.add_argument('S',type=int,nargs='?',help='start index of pages',default=1)
 args = parser.parse_args()
 
 class EUSpider(scrapy.Spider):
@@ -14,7 +15,7 @@ class EUSpider(scrapy.Spider):
     allowed_domains = ["pubgtracker.com"]
 
     start_urls = (
-        'https://pubgtracker.com/leaderboards/pc/Rating?page=1&mode=3&region=3',
+        'https://pubgtracker.com/leaderboards/pc/Rating?page=%d&mode=3&region=3'%(args.S),
     )
     base = 'https://pubgtracker.com/leaderboards/pc/Rating?'
     p = re.compile(r'.*page=([0-9]+)&.*')
