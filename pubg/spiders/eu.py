@@ -10,6 +10,8 @@ parser.add_argument('N',type=int,nargs='?',help='number of pages',default=30)
 parser.add_argument('S',type=int,nargs='?',help='start index of pages',default=1)
 args = parser.parse_args()
 
+print( args )
+
 class EUSpider(scrapy.Spider):
     name = "eu"
     allowed_domains = ["pubgtracker.com"]
