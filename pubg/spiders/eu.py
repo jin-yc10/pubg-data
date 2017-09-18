@@ -11,9 +11,18 @@ from scrapy.selector import Selector
 import leveldb
 
 try:
-    _we_chat = __import__(wechat)
+    _we_chat = __import__('itchat')
 except:
-    print('Load wechat library failed, run withou notification')    
+    print('Load wechat library failed, run withou notification')
+    has_we_chat = False
+else:
+    globals()['itchat'] = _we_chat
+    has_we_chat = True
+
+print(has_we_chat)
+if has_we_chat:
+    itchat.auto_login(hotReload=True)
+    itchat.send(u'Start Notifying', 'filehelper')
 
 parser = argparse.ArgumentParser(description='EUSpider')
 parser.add_argument('N',type=int,nargs='?',help='number of pages',default=30)
@@ -61,6 +70,9 @@ class EUSpider(scrapy.Spider):
             url_patern = 'https://pubgtracker.com/leaderboards/pc/Rating?page=%d&mode=3&region=3'
             next_url = url_patern % (current_page + 1)
             print('next_page =', next_url )
+            if has_we_chat:
+                if current_page % 5 == 0:
+                    itchat.send(u'Working on '+ next_url, 'filehelper')
             if current_page < args.N :
                 if current_page == -1:
                     yield scrapy.Request(url=next_url, meta={"dont_cache": True}, callback=self.parse)
