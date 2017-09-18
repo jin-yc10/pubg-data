@@ -8,6 +8,7 @@ import leveldb
 parser = argparse.ArgumentParser(description='EUSpider')
 parser.add_argument('N',type=int,nargs='?',help='number of pages',default=30)
 parser.add_argument('S',type=int,nargs='?',help='start index of pages',default=1)
+parser.add_argument('L',type=int,nargs='?',help='set 1 to lilst only',default=0)
 args = parser.parse_args()
 
 print( args )
@@ -40,6 +41,8 @@ class EUSpider(scrapy.Spider):
             rating = tds[2].xpath("div[@class='pull-right']/text()").extract()[0].strip()
             n_game = tds[3].xpath('text()').extract()[0].strip()
             print(rank, id, href, rating, n_game)
+            if args.L == 1:
+                continue
             yield scrapy.Request(url = 'https://pubgtracker.com/profile/pc/%s/squad?region=as'%(id),
                                   callback=self.parse_user)
         next_page = Selector(text=body).xpath("//a[@class='next next-page']")
@@ -50,7 +53,10 @@ class EUSpider(scrapy.Spider):
             next_url = url_patern % (current_page + 1)
             print('next_page =', next_url )
             if current_page < args.N :
-                yield scrapy.Request(url=next_url, callback=self.parse )
+                if current_page == -1:
+                    yield scrapy.Request(url=next_url, meta={"dont_cache": True}, callback=self.parse)
+                else:
+                    yield scrapy.Request(url=next_url, callback=self.parse )
         return
 
     def parse_user(self, response):
