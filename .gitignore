@@ -3,4 +3,4 @@
 user_db
 .ipynb_checkpoints/
 *.pyc
-
+.vscode

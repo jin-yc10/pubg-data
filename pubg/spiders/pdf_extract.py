@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import scrapy
 from scrapy.selector import Selector
-import wget
+
 # http://dlsys.cs.washington.edu/schedule
 class PdfExtractSpider(scrapy.Spider):
     name = "pdf_extract"

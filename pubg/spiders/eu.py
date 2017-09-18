@@ -1,15 +1,24 @@
+'''
+AS info spider
+'''
 # -*- coding: utf-8 -*-
-import scrapy
+import re
+import json
 import argparse
+
+import scrapy
 from scrapy.selector import Selector
-import re, json
 import leveldb
+
+try:
+    _we_chat = __import__(wechat)
+except:
+    print('Load wechat library failed, run withou notification')    
 
 parser = argparse.ArgumentParser(description='EUSpider')
 parser.add_argument('N',type=int,nargs='?',help='number of pages',default=30)
 parser.add_argument('S',type=int,nargs='?',help='start index of pages',default=1)
 args = parser.parse_args()
-
 print( args )
 
 class EUSpider(scrapy.Spider):
@@ -21,12 +30,12 @@ class EUSpider(scrapy.Spider):
     )
     base = 'https://pubgtracker.com/leaderboards/pc/Rating?'
     p = re.compile(r'.*page=([0-9]+)&.*')
-    user_db = leveldb.LevelDB('./user_db')
+    user_db = leveldb.LevelDB('./user_db_win')
 
     def parse(self, response):
         match = self.p.match(response.url)
         current_page = int(match.group(1))
-        print('current_page =',current_page)
+        print('current_page =', current_page)
         body = response.body
         els = Selector(text=body).xpath("//table[@class='card-table-material']/tbody")[0]
         for tr in els.xpath('tr'):
