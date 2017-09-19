@@ -94,15 +94,26 @@ class ASSpider(scrapy.Spider):
     user_cnt = 0
     last_time = time.time()
 
+    def save_user(self, user_object, raw_object):
+        try:
+            user = self.user_db.Get(user_object['PlayerName'])
+            print(user_object['PlayerName'], 'existed!')
+        except KeyError:
+            self.user_db.Put(user_object['PlayerName'], bytearray(raw_object, 'utf8'))
+
     def parse_user_api(self, response):
         body = response.body
         player_info = json.loads(body)
-        print(player_info['PlayerName'])
+        try:
+            print(player_info['PlayerName'])
+            self.save_user(player_info, body)
+        except KeyError:
+            pass
         self.user_cnt += 1
-        now_time = time.time()
-        elapsed_time = now_time - self.last_time
-        self.last_time = now_time
         if( self.user_cnt % 200 == 0) and has_we_chat:
+            now_time = time.time()
+            elapsed_time = now_time - self.last_time
+            self.last_time = now_time
             itchat.send('200 Users in %d seconds'%elapsed_time)
 
     def parse_user(self, response):
@@ -114,8 +125,4 @@ class ASSpider(scrapy.Spider):
             if content.find('playerData') > -1:
                 # now info is in this dict
                 player_info = json.loads(content[17:-1])
-                try:
-                    user = self.user_db.Get(player_info['AccountId'])
-                    print(player_info['AccountId'], 'existed!')
-                except KeyError:
-                    self.user_db.Put(player_info['AccountId'], bytearray(content[17:-1], 'utf8'))
+                self.save_user(player_info, content[17:-1])
