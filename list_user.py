@@ -1,6 +1,6 @@
 import leveldb, json
 
-user_db = leveldb.LevelDB('./user_db')
+user_db = leveldb.LevelDB('./user_db_win')
 cnt = 0;
 for k,v in user_db.RangeIter():
     obj = json.loads(v.decode('utf8'))
