@@ -25,7 +25,7 @@ if has_we_chat:
     itchat.auto_login(hotReload=True)
     itchat.send(u'Start Notifying', 'filehelper')
 
-parser = argparse.ArgumentParser(description='EUSpider')
+parser = argparse.ArgumentParser(description='ASSpider')
 parser.add_argument('N',type=int,nargs='?',help='number of pages',default=30)
 parser.add_argument('S',type=int,nargs='?',help='start index of pages',default=1)
 parser.add_argument('L',type=int,nargs='?',help='set 1 to lilst only',default=0)
@@ -35,8 +35,8 @@ print( args )
 import os
 curr_dir_path = os.path.dirname(os.path.realpath(__file__))
 
-class EUSpider(scrapy.Spider):
-    name = "eu"
+class ASSpider(scrapy.Spider):
+    name = "as"
     allowed_domains = ["pubgtracker.com"]
 
     start_urls = (
@@ -44,7 +44,7 @@ class EUSpider(scrapy.Spider):
     )
     base = 'https://pubgtracker.com/leaderboards/pc/Rating?'
     p = re.compile(r'.*page=([0-9]+)&.*')
-    user_db = leveldb.LevelDB('./user_db_win')
+    user_db = leveldb.LevelDB('./user_db')
     pubg_api_key = get_key(curr_dir_path+'/../../.PRIVATE')
 
     def parse(self, response):
