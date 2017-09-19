@@ -5,11 +5,12 @@ AS info spider
 import re
 import json
 import argparse
+import time
 
 import scrapy
 from scrapy.selector import Selector
 import leveldb
-
+from pubg_api.api import get_key
 try:
     _we_chat = __import__('itchat')
 except:
@@ -17,9 +18,9 @@ except:
     has_we_chat = False
 else:
     globals()['itchat'] = _we_chat
-    has_we_chat = True
+    has_we_chat = False
 
-print(has_we_chat)
+# print(has_we_chat)
 if has_we_chat:
     itchat.auto_login(hotReload=True)
     itchat.send(u'Start Notifying', 'filehelper')
@@ -31,6 +32,9 @@ parser.add_argument('L',type=int,nargs='?',help='set 1 to lilst only',default=0)
 args = parser.parse_args()
 print( args )
 
+import os
+curr_dir_path = os.path.dirname(os.path.realpath(__file__))
+
 class EUSpider(scrapy.Spider):
     name = "eu"
     allowed_domains = ["pubgtracker.com"]
@@ -41,6 +45,7 @@ class EUSpider(scrapy.Spider):
     base = 'https://pubgtracker.com/leaderboards/pc/Rating?'
     p = re.compile(r'.*page=([0-9]+)&.*')
     user_db = leveldb.LevelDB('./user_db_win')
+    pubg_api_key = get_key(curr_dir_path+'/../../.PRIVATE')
 
     def parse(self, response):
         match = self.p.match(response.url)
@@ -48,6 +53,7 @@ class EUSpider(scrapy.Spider):
         print('current_page =', current_page)
         body = response.body
         els = Selector(text=body).xpath("//table[@class='card-table-material']/tbody")[0]
+
         for tr in els.xpath('tr'):
             tds = tr.xpath('td')
             if(len(tds) < 2):
@@ -61,8 +67,13 @@ class EUSpider(scrapy.Spider):
             print(rank, id, href, rating, n_game)
             if args.L == 1:
                 continue
-            yield scrapy.Request(url = 'https://pubgtracker.com/profile/pc/%s/squad?region=as'%(id),
-                                  callback=self.parse_user)
+            if len(self.pubg_api_key) == 0: # no key
+                yield scrapy.Request(url = 'https://pubgtracker.com/profile/pc/%s/squad?region=as'%(id),
+                                    callback=self.parse_user)
+            else:
+                yield scrapy.Request(url = 'https://pubgtracker.com/api/profile/pc/%s'%(id),
+                                     headers= { 'TRN-Api-Key': self.pubg_api_key },
+                                     callback=self.parse_user_api)
         next_page = Selector(text=body).xpath("//a[@class='next next-page']")
         print(next_page.extract())
         if len(next_page.xpath('@disabled')) == 0:
@@ -79,6 +90,20 @@ class EUSpider(scrapy.Spider):
                 else:
                     yield scrapy.Request(url=next_url, callback=self.parse )
         return
+
+    user_cnt = 0
+    last_time = time.time()
+
+    def parse_user_api(self, response):
+        body = response.body
+        player_info = json.loads(body)
+        print(player_info['PlayerName'])
+        self.user_cnt += 1
+        now_time = time.time()
+        elapsed_time = now_time - self.last_time
+        self.last_time = now_time
+        if( self.user_cnt % 200 == 0) and has_we_chat:
+            itchat.send('200 Users in %d seconds'%elapsed_time)
 
     def parse_user(self, response):
         # https://pubgtracker.com/profile/pc/Maesaengi/squad?region=as
