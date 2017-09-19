@@ -18,14 +18,14 @@ except:
     has_we_chat = False
 else:
     globals()['itchat'] = _we_chat
-    has_we_chat = True
+    has_we_chat = False
 
 # print(has_we_chat)
 if has_we_chat:
     itchat.auto_login(hotReload=True)
     itchat.send(u'Start Notifying', 'filehelper')
 
-parser = argparse.ArgumentParser(description='ASSpider')
+parser = argparse.ArgumentParser(description='EUSpider')
 parser.add_argument('N',type=int,nargs='?',help='number of pages',default=30)
 parser.add_argument('S',type=int,nargs='?',help='start index of pages',default=1)
 parser.add_argument('L',type=int,nargs='?',help='set 1 to lilst only',default=0)
@@ -35,8 +35,9 @@ print( args )
 import os
 curr_dir_path = os.path.dirname(os.path.realpath(__file__))
 
-class ASSpider(scrapy.Spider):
-    name = "as"
+class Spider_EU(scrapy.Spider):
+    print('EUSpider Called')
+    name = "spider_EU"
     allowed_domains = ["pubgtracker.com"]
 
     start_urls = (
@@ -44,10 +45,12 @@ class ASSpider(scrapy.Spider):
     )
     base = 'https://pubgtracker.com/leaderboards/pc/Rating?'
     p = re.compile(r'.*page=([0-9]+)&.*')
-    user_db = leveldb.LevelDB('./user_db')
+    user_db = None  # leveldb.LevelDB('./user_db')
     pubg_api_key = get_key(curr_dir_path+'/../../.PRIVATE')
 
     def parse(self, response):
+        if self.user_db == None:
+            self.user_db = leveldb.LevelDB('./user_db')
         match = self.p.match(response.url)
         current_page = int(match.group(1))
         print('current_page =', current_page)
