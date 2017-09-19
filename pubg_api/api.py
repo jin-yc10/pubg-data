@@ -2,6 +2,7 @@ def get_key(PATH):
     key = ''
     with open(PATH) as k:
         key = k.readline()
+        key = key.strip()
     return key
 
 if __name__ == '__main__':
