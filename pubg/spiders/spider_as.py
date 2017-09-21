@@ -48,6 +48,8 @@ class Spider_AS(scrapy.Spider):
     user_db = None # leveldb.LevelDB('./user_db')
     pubg_api_key = get_key(curr_dir_path+'/../../.PRIVATE')
 
+    file_ids = open('user_ids.txt', 'w')
+
     def parse(self, response):
         if self.user_db == None:
             self.user_db = leveldb.LevelDB('./user_db')
@@ -68,6 +70,7 @@ class Spider_AS(scrapy.Spider):
             rating = tds[2].xpath("div[@class='pull-right']/text()").extract()[0].strip()
             n_game = tds[3].xpath('text()').extract()[0].strip()
             print(rank, id, href, rating, n_game)
+            self.file_ids.write('%d %s %f %d\n', rank, id, rating, n_game)
             if args.L == 1:
                 continue
             if len(self.pubg_api_key) == 0: # no key
@@ -132,3 +135,4 @@ class Spider_AS(scrapy.Spider):
 
     def __del__(self):
         self.user_db.Close()
+        self.file_ids.close()
